@@ -1,0 +1,34 @@
+ArrayList
+	1.ArrayList是List接口可变数组的实现,允许存放null
+	2.底层是使用数组实现,无参构造函数默认初始化长度为10,数组扩容是,会将原数组中的元素重新拷贝到新数组中,长度为原来的1.5+1(代扩容价高)
+	3.非同步,采用Fail-Fast机制,面对并发修改,迭代器很快失败抛出异常
+	4.remove方法会让下表到数组末尾的元素想起那移动以为,把最后一位的值置空,方便GC
+	
+LinkedList
+	1.LinkedList是List接口双向链表的非同步实现,允许存放null
+	2.底层的数据结构是基于双向链表,数据结构是节点
+	3.双向链表中每个节点分为prev,next,item,其中prev中存放上一个节点的信息,next存放下一个节点的信息,item存放该节点的值
+	
+HashMap
+	1.HashMap是基于哈希表的的map接口的非同步实现,允许存放null键值
+	2.底层使用数组+链表实现,数组中的每一项是个单向链表,当链表长度大于一定长度,采用红黑树来减少链表查询时间
+	3.HashMap存储对象时,会根据key的hash算法来决定在数组中的存储位置,再根据equals方法决定在该数组位置上的链表中的存储位置,取出元素时先计算hash值,再equals比较
+	4.HashMap的默认负载因子是0.75,就是当map填满了数组75%,就会创建原来HashMap两倍大小的数组,并将原来对象存放到新的数组中(rehashing)
+	
+HashTable
+	1.HashTable是基于哈市表的Map接口的同步实现,不允许使用null键值
+	2.底层是数组+链表
+	3.synchronized是针对整张Hash表,每次所致整张表让线程独占
+	
+ConcurrentHashMap
+	1.使用了锁分离技术,允许多个修改操作并发进行
+	2.ConcurrentHashMap使用多个子Hash表,使用多个锁来控制对hash表的不同段进行的修改
+	
+HashSet
+	HashSet的底层是HashMap,允许存储null元素
+	
+LinkedHashMap
+	继承于HashMap,Entry除了保存当前对象的引用外,还保存对前后元素的应用,从而构建了双向连接列表
+	
+	
+//TODO多线程rehash问题

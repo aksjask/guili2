@@ -1,0 +1,220 @@
+框架
+	1.框架就是应用的半成品,帮你实现了部分功能,简化了开发过程
+	2.框架一般用在底层引用平台和高层业务逻辑之间的中间层
+	
+高内聚,低耦合
+	1.高内聚就是说相关度比较高的部分尽可能的集中,不要分散
+	2.低耦合就是说两个相关的模块尽可能的吧以来部分降低到最小,不要让两个系统产生强依赖
+	3.例子说明:订单和库存息息相关,如果把扣减库存的逻辑做在订单系统中,那么订单系统和库存系统就会耦合,同样也会造成订单系统的功能不够集中
+	
+MVC
+	1.Model模型层,是应用程序中用于处理程序数据逻辑的部分,负责在数据库中存储数据
+	2.Controller控制层,是应用程序中处理用户交互的部分,负责从视图层读取数据,冰箱模型层发送数据
+	3.View视图层,是应用程序中处理数据显示的部分,依赖模型数据创建
+	
+MyBatis
+	mybatis是一个采用了orm思想的,优秀的基于java的持久层框架,它内部封装了jdbc,是开发者只需要关注sql语句本身,而不需要花费时间去加载驱动,创建连接,创建statement等繁杂的过程
+	
+JDBC过程
+	1.加载驱动
+	2.获取connection对象
+	3.通过connection获取statement对象
+	4.用statement对象去执行sql语句,得到结果集resultset
+	5.遍历结果集
+	6.释放资源,结果集,statement对象,connection
+
+Jdbc的问题
+	1.数据库连接创建,释放平凡造成系统资源浪费,影响性能,应使用数据库连接池
+	2.sql语句在代码中硬编码,代码不易维护
+	3.使用preparedStatement向占位符中传参也是硬编码
+	4.对结果集的解析很麻烦,应将数据库记录封装成pojo对象
+	
+创建SqlSessionFactory工厂,mybatis使用了构建者模式(隐藏细节,使用者直接调用方法得到对象)
+生产sqlSession使用了工厂模式(降低类之间的依赖,解除耦合性)
+创建Dao接口实现类使用了代理模式(不修改源码的基础上,对已有方法进行增强)
+
+MyBatis的实现原理
+	mybatis的底层还是采用原生的jdbc来对数据库进行操作,只是通过sqlsessionfactory,sqlsession,executor,statementhandler,parameterhandler.resulthandler等处理器封装了这些过程
+	
+	执行器:executor,执行增删改查,事务相关的操作
+	参数处理器:parameterHandler,参数预编译
+	结构处理器:resultSetHandler
+	sql查询处理器:statementHandler:执行sql语句,通过parameterHandler和ResultHandler分别进行参数预编译与结果处理,而parameterHandler和ResultHandler使用typeHandler进行映射
+	
+MyBatis的工作过程
+	我通过上网搜索和自己debug去验证的方式对MyBatis的工作过程有所了解
+	
+	1.先读取配置文件,形成inputStream流
+	
+	2.然后创建SqlSessionFactoryBuilder对象
+	3.调用该对象的build方法,参数是之前配置文件的inputStream流
+	4.在这方法里,创建一个XmlConfigBuilder对象,调用该对象的parse方法,parse方法中调用私有方法parseConfiguration解析xml全局配置文件,返回一个带有配置文件值的configuration对象
+	5.此时SqlSesssionFactoryBuilder再次调用build方法,此时参数时configuration对象,在方法中先是创建一个DefaultSqlSessionFactory,然后再将该对象的configuration进行赋值,并返回
+	5.DefaultSqlSessionFactory调用openSession方法,在这方法里再调用私有方法openSessionFromDataSource方法,里面的有一个参数是ExecutorType
+	6. 获取属性值,创建Exeucutor对象并返回,此时调用DefaultSqlSessionFactory的new DefaultSqlSession方法里面传入configuration对象,executor对象,autoCommit布尔类型的对象,然后创建一个DefaultSqlSession并返回
+		
+	7.通过DefaultSqlSession对象的getMapper方法创建mapper对象,创建mapper对象的过程使用了动态代理的方式,得到一个代理对象
+	
+	8.接下来就是执行crud的过程,这个过程就是MapperProxy执行invoke方法的过程
+	
+	
+延迟加载
+	sqlMapperConfig.xml
+		<settings> 
+			<setting name="lazyLoadingEnabled" value="true"/> 
+		</settings>
+
+Mybatis缓存
+	一级缓存是sqlSession级别的缓存,只要sqlSession没有flush或close,它就存在,当调用sqlSession的修改,添加,删除,commit(),close()等方法时,一级缓存就会清空(默认开启)
+	
+	二级缓存是mapper映射级别的缓存,是跨sqlSession的,多个sqlSession去操作同一个mapper映射的sql语句,可以共用二级缓存(默认关闭)
+		sqlMapperConfig.xml
+			<settings>
+				<setting name="cacheEnable" value="true"/>
+			</settings>
+		Mapper映射文件
+			<cache/>
+			
+			再查询语句上设置useCache="true"
+	
+	使用二级缓存时,所缓存的类要实现serializable接口,使用序列化的方式保存对象
+	
+MyBatis注解
+	@SelectoProvider:实现动态SQL映射
+	@CacheNameSpace:实现注解二级缓存的使用
+	
+	
+Spring
+	1.spring是一个轻量级的,开源的,模块化的,一站式业务层框架,它能够整合其他主流框架
+	2.spring的实质就是实现了工厂模式的工厂类,在配置文件中,通过添加<bean>标签,来创建实例对象
+	3.spring的核心分别是Ioc和AOP
+		IoC是控制反转,即使将常见实力对象的权力交给spring框架去管理,通过依赖注入的方式去,去注入给调用者,解除bean与bean之间的耦合性
+			依赖注入的三种方式分别是:接口注入,构造注入,setter方法注入(<property name="" value或ref="">
+			
+		AOP是指面向切面编程,就是在不修改代码的前体下,对程序进行加强,例如加入日志,权限判断,异常处理等等
+		AOP的底层使用的是代理技术,分别为jdkProxy动态代理和CGLIB动态代理,jdk动态代理是需要被代理的类实现接口的,而CGLIB则不需要被代理的类实现接口
+		
+	关于动态代理,它的底层实现是利用java反射来实现,在java7之后引入了MethodHandle(方法句柄)的方式,称之为现代化反射,它比反射要简洁,不会写一堆冗余代码
+
+	Proxy主要使用 Proxy.newProxyInstance方法
+	CGLIB主要使用 Enhancer.create方法
+	MethodHandler主要使用 MethodHandles.lookup().findVirtual().bindTO()方法
+	
+	静态代理:是实现已经编写好,在程序运行前代理类的.class文件就已经存在
+	动态代理:在程序运行时运用反射机制动态创建而成
+	
+	静态代理虽然执行效率要比动态代理高,但需要实现编写好代理类的java文件,工程量大,由于代理类和委托类实现了相同接口,会出现大量重复代码,而且后期不易于维护;
+	而动态代理则是随着程序的运行而创建代理对象,比较灵活,但是动态代理的底层是反射机制,比较消耗资源
+	
+IOC中bean的作用域
+	singleton:单例的(默认)
+	prototype:多例
+	request:请求来创建,请求结束消亡,可以看作是prototype的一种特例
+	session:比request存货时间长
+	global session:应用于portlet环境下
+	
+实例化Bean的三种方式
+	1.无参构造
+	2.静态工厂
+	3.实例工厂
+	
+	
+注解
+	@Autowired:默认按照类型注入属性
+	
+	@Qualifier:在默认按照类型注入的基础上,再按照bean的id注入.在给字段注入时不能独立使用,要和@Autowired一起使用,给方法参数注入时,可以单独使用
+	
+	@Resource:默认按照Bean的id注入属性
+	
+	@PostConstruct:指定初始化方法
+	
+	@PreDestroy:指定销毁方法
+	
+	@Configuration:指定当前类是一个Spring配置类,当创建容器时从该类上加载注解,获取容器时用AnnotationApplicationContext
+	
+	@ComponentScan:指定spring在初始化容器时要扫描的包
+	
+	@Bean:只能用于方法上,表明此方法创建一个对象,并且放入容器中
+	
+	@PropertySource:用于加载.properties文件中的配置
+	
+	@Import:用于导入其他配置类
+	
+	
+Spring的事务的管理
+	编程式事务:主要使用transactionTemplate,省略了部分的提交,回滚,一系列事务对象的定义
+	声明式事务:式建立再AOP基础之上,本质就是对方法进行拦截,在目标方法开始之前创建一个事务,在执行完目标方法之后根据情况执行提交或回滚
+	
+	事务的隔离级别
+		ISOLATION_DEFAULT
+		ISOLATION_READ_UNCOMMITEED
+		ISOLATION_READ_COMMITEED
+		ISOLATION_REPEATABLE_READ
+		ISOLATION_SERIALIZABLE
+		
+	事务传播行为
+		PROPAGATION_REQUIED:存在事务则加入事务,如果没有就创建一个
+		PROPAGATION_REQUIED_NEW:创建一个新事物,无论当前有没有事务
+		PROPAGATION_SUPPORTS:当前存在事务就加入,没有事务就以非事务方式执行
+		PROPAGATION_NOT_SUPPORTED:以非事务的方式运行,当前有事务就挂起
+		PROPAGATION_NEVER:以非事务方式运行,有就抛异常
+		PROPAGETION_MANDATORY:如果当前有事务就加入,如果没有就抛异常
+		PROPAGETION_NESTED:当前有事务执行嵌套事务,没有事务就创建一个
+		
+	AOP配置
+		<aop:config>
+			<aop:aspect id="logAdvice" ref="logger">
+				<aop:before method="printLog"
+							pointcut="execution(* com.itheima.service.impl.*.*(..))"/>
+			</aop:aspect>
+		</aop:config>
+			
+	事务配置
+		<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"> 
+			<property name="dataSource" ref="dataSource"></property> 
+		</bean>
+		<!-- 事务的配置 --> 
+		<tx:advice id="txAdvice" transaction-manager="transactionManager"> </tx:advice>
+		<tx:attributes> 
+		<!-- 指定方法名称：是业务核心方法   
+			read-only：是否是只读事务。默认 false，不只读。  							isolation：指定事务的隔离级别。默认值是使用数据库的默认隔离级别。   
+			propagation：指定事务的传播行为。  
+			timeout：指定超时时间。默认值为：-1。永不超时。  rollback-for：用于指定一个异常，当执行产生该异常时，事务回滚。产生其他异常，事务不回滚。 没有默认值，任何异常都回滚。  no-rollback-for：用于指定一个异常，当产生该异常时，事务不回滚，产生其他异常时，事务回 滚。没有默认值，任何异常都回滚。  -->  
+		<tx:method name="*" read-only="false" propagation="REQUIRED"/>  <tx:method name="find*" read-only="true" propagation="SUPPORTS"/> </tx:attributes> 
+		
+		
+SpringMVC执行流程
+	1、用户发送请求至前端控制器DispatcherServlet
+	2、DispatcherServlet收到请求调用HandlerMapping处理器映射器。
+	3、处理器映射器根据请求url找到具体的处理器，生成处理器对象及处理器拦截器(如果有则生成)一并返回给DispatcherServlet。
+	4、DispatcherServlet通过HandlerAdapter处理器适配器调用处理器
+	5、HandlerAdapter执行处理器(handler，也叫后端控制器)。
+	6、Controller执行完成返回ModelAndView
+	7、HandlerAdapter将handler执行结果ModelAndView返回给DispatcherServlet
+	8、DispatcherServlet将ModelAndView传给ViewReslover视图解析器
+	9、ViewReslover解析后返回具体View对象
+	10、DispatcherServlet对View进行渲染视图（即将模型数据填充至视图中）。
+	11、DispatcherServlet响应用户
+	
+	
+Spring Boot
+	spring Boot只是简化了spring的开发,并没有为spring提供了额外的功能,spring项目有个启动类,上面加了springBootApplication注解,有了这个注解,运行这个类,就会去执行springboot项目
+	
+	springboot的启动流程
+		1.创建SpringApplication对象
+			a.先去保存主配置类
+			b.然后判断当前是否一个web应用
+			c.保存类路径下META-INF/spring.factories配置的所有ApplicationContextInitializer和ApplicationListener
+			d.从多个配置类中找到有main方法的主配置类,创建完SpringApplication对象
+			
+		2.SpringApplication实例初始化完成后,执行run方法
+			a.遍历调用所有SpringApplicationRunListener,调用他们的starting()方法
+			b.创建并配置当前SpringBoot应用将要使用的环境
+			c.遍历调用所有SpringApplicationRunListener的environmentPrepared()方法,告诉应用使用的环境准备好了
+			d.创建ApplicationContext,决定创建使用web的ioc还是普通的ioc
+			e.将环境environment保存到ioc容器中,然后对ioc容器进行设置,最核心的一步,将之前通过@EnableAutoConfiguration获取的所有配置以及其他形式的ioc容器加载到ApplicationContext中
+			f.整个SpringBoot用用启动完成后返回ApplicationContext
+
+	
+
+	
